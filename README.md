@@ -157,3 +157,7 @@ Apache 2.0 -- see [LICENSE](LICENSE).
 - [Symbiont Documentation](https://docs.symbiont.dev)
 - [ThirdKey AI](https://thirdkey.ai)
 - [Implementation Roadmap](ROADMAP.md)
+
+## Disclaimer
+
+This project is not affiliated with, endorsed by, or sponsored by Anthropic, PBC. "Claude" and "Claude Code" are trademarks of Anthropic, PBC. "Symbiont" and "ThirdKey" are trademarks of ThirdKey AI.
