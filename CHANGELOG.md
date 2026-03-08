@@ -31,7 +31,7 @@
 - Commands:
   - `/symbi-status` -- runtime health check
 - Hooks:
-  - `cedar-gate.sh` -- PreToolUse Cedar policy check
+  - `policy-log.sh` -- PreToolUse advisory policy logging
   - `audit-log.sh` -- PostToolUse audit logging
   - `install-check.sh` -- session start symbi verification
 - Agents:

@@ -22,10 +22,10 @@ symbi-claude-code/
 ├── hooks/
 │   └── hooks.json               # Hook config for Cedar policy enforcement
 ├── scripts/
-│   ├── cedar-gate.sh            # PreToolUse hook: Cedar policy check
-│   ├── schemapin-verify.sh      # PreToolUse hook: MCP tool verification
+│   ├── policy-log.sh            # PreToolUse hook: advisory policy logging
 │   ├── audit-log.sh             # PostToolUse hook: cryptographic audit trail
-│   └── install-check.sh         # SessionStart hook: verify symbi is installed
+│   ├── install-check.sh         # SessionStart hook: verify symbi is installed
+│   └── mcp-wrapper.sh           # MCP transport switching (stdio/HTTP)
 ├── agents/
 │   ├── symbi-governor.md        # Main governance agent
 │   └── symbi-dev.md             # DSL development agent
@@ -70,7 +70,7 @@ Create `.claude-plugin/plugin.json`:
 {
   "name": "symbi",
   "description": "Zero-trust AI agent governance for Claude Code. Adds ORGA runtime, Cedar policy enforcement, SchemaPin tool verification, and cryptographic audit trails to your development workflow.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "ThirdKey AI",
     "email": "hello@thirdkey.ai",
@@ -118,7 +118,7 @@ Create `.claude-plugin/marketplace.json`:
     {
       "name": "symbi",
       "source": ".",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "description": "Zero-trust AI agent governance — ORGA runtime, Cedar policies, SchemaPin verification, and cryptographic audit trails for Claude Code."
     }
   ]
@@ -483,9 +483,9 @@ echo "{\"feedback\": \"Symbiont governance active (${VERSION})\"}" >&2
 exit 0
 ```
 
-#### Task 3.2: Cedar policy gate hook (PreToolUse)
+#### Task 3.2: Policy logging hook (PreToolUse)
 
-Create `scripts/cedar-gate.sh`:
+Create `scripts/policy-log.sh`:
 
 ```bash
 #!/bin/bash
@@ -554,7 +554,7 @@ Create `hooks/hooks.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/cedar-gate.sh",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/policy-log.sh",
             "timeout": 5
           }
         ]
@@ -689,7 +689,7 @@ Write a comprehensive README covering:
 
 #### Task 5.2: CHANGELOG.md
 
-Initialize with v0.1.0 entry listing all initial components.
+Initialize with v0.2.0 entry listing all initial components.
 
 #### Task 5.3: LICENSE
 
@@ -744,7 +744,7 @@ Mode B is the dark factory architecture. Symbiont is the security perimeter; Cla
 #### Task 6.1: Environment detection in hooks
 
 Update all hook scripts to check `SYMBIONT_MANAGED` and adjust behavior:
-- `cedar-gate.sh`: Defer to outer ORGA Gate in Mode B, self-enforce in Mode A
+- `policy-log.sh`: Defer to outer ORGA Gate in Mode B, advisory logging in Mode A
 - `audit-log.sh`: Skip local logging in Mode B (outer runtime journals), log locally in Mode A
 - `install-check.sh`: Report managed mode in Mode B, check binary in Mode A
 
@@ -804,7 +804,7 @@ Update README and CLAUDE.md with:
 
 1. **Phase 1** (Day 1): Scaffold repo, plugin.json, marketplace.json, .mcp.json, CLAUDE.md, settings.json
 2. **Phase 2** (Day 2-3): Skills (/symbi-init, /symbi-policy, /symbi-dsl, /symbi-verify, /symbi-audit) and /symbi-status command
-3. **Phase 3** (Day 3-4): Hook scripts (cedar-gate, audit-log, install-check) and hooks.json
+3. **Phase 3** (Day 3-4): Hook scripts (policy-log, audit-log, install-check) and hooks.json
 4. **Phase 4** (Day 4): Agent definitions (symbi-governor, symbi-dev)
 5. **Phase 5** (Day 5): README, CHANGELOG, LICENSE, install.sh, test with `claude --plugin-dir`
 6. **Phase 6** (Day 6): CliExecutor bridge -- environment detection, MCP transport switching, Agent SDK skill, examples, dual-mode docs
@@ -839,7 +839,7 @@ This plugin depends on the `symbi` binary being available. The MCP server is bui
 
 If the symbi binary is not installed, the plugin degrades gracefully — skills and agents still provide guidance, hooks still log, but MCP tools are unavailable.
 
-## Future Enhancements (Post-v0.1.0)
+## Future Enhancements (Post-v0.2.0)
 
 - **Anthropic official marketplace submission**: Submit via `anthropics/claude-plugins-official` submission form
 - **SchemaPin PreToolUse enforcement**: Full cryptographic verification before any MCP tool call
