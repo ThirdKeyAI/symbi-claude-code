@@ -1,5 +1,9 @@
 # symbi-claude-code
 
+<p align="center">
+  <img src="symbi-claude-code.png" alt="symbi-claude-code" width="300">
+</p>
+
 A Claude Code plugin that brings [Symbiont](https://symbiont.dev)'s zero-trust AI agent governance to your development workflow. Enforce Cedar authorization policies, verify MCP tool integrity with SchemaPin, maintain cryptographic audit trails, and manage governed agents -- all from within Claude Code.
 
 ## Prerequisites
