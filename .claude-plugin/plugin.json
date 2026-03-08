@@ -1,0 +1,30 @@
+{
+  "name": "symbi",
+  "description": "Zero-trust AI agent governance for Claude Code. Adds ORGA runtime, Cedar policy enforcement, SchemaPin tool verification, and cryptographic audit trails to your development workflow.",
+  "version": "0.2.0",
+  "author": {
+    "name": "ThirdKey AI",
+    "email": "hello@thirdkey.ai",
+    "url": "https://thirdkey.ai"
+  },
+  "homepage": "https://symbiont.dev",
+  "repository": "https://github.com/thirdkeyai/symbi-claude-code",
+  "license": "Apache-2.0",
+  "keywords": [
+    "security",
+    "governance",
+    "zero-trust",
+    "cedar",
+    "mcp",
+    "agent-runtime",
+    "policy-enforcement",
+    "audit",
+    "schemapin",
+    "enterprise"
+  ],
+  "skills": "./skills/",
+  "agents": "./agents/",
+  "commands": "./commands/",
+  "hooks": "./hooks/hooks.json",
+  "mcpServers": "./.mcp.json"
+}

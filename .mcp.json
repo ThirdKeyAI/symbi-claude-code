@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "symbi": {
+      "command": "symbi",
+      "args": ["mcp"],
+      "env": {
+        "SYMBIONT_LOG_LEVEL": "warn",
+        "RUST_LOG": "warn"
+      }
+    }
+  }
+}

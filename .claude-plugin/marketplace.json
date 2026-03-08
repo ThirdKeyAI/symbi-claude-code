@@ -1,0 +1,19 @@
+{
+  "name": "symbi-marketplace",
+  "metadata": {
+    "description": "ThirdKey AI agent governance plugins for Claude Code",
+    "url": "https://thirdkey.ai"
+  },
+  "owner": {
+    "name": "ThirdKey AI",
+    "url": "https://github.com/thirdkeyai"
+  },
+  "plugins": [
+    {
+      "name": "symbi",
+      "source": ".",
+      "version": "0.2.0",
+      "description": "Zero-trust AI agent governance — ORGA runtime, Cedar policies, SchemaPin verification, and cryptographic audit trails for Claude Code."
+    }
+  ]
+}
