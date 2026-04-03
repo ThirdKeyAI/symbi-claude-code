@@ -12,7 +12,7 @@
     {
       "name": "symbi",
       "source": "./",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "description": "Zero-trust AI agent governance — ORGA runtime, Cedar policies, SchemaPin verification, and cryptographic audit trails for Claude Code."
     }
   ]
