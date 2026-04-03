@@ -1,16 +1,21 @@
 ---
 name: symbi-dev
 description: Specialized agent for developing Symbiont DSL definitions, Cedar policies, and trust stack configurations. Use for agent development tasks.
-model: claude-sonnet-4-20250514
-allowed-tools: [
-  "Read", "Write", "Edit", "Bash", "Glob", "Grep", "LS",
-  "mcp__symbi__invoke_agent",
-  "mcp__symbi__list_agents",
-  "mcp__symbi__parse_dsl",
-  "mcp__symbi__get_agent_dsl",
-  "mcp__symbi__get_agents_md",
-  "mcp__symbi__verify_schema"
-]
+model: inherit
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - Glob
+  - Grep
+  - LS
+  - mcp__symbi__invoke_agent
+  - mcp__symbi__list_agents
+  - mcp__symbi__parse_dsl
+  - mcp__symbi__get_agent_dsl
+  - mcp__symbi__get_agents_md
+  - mcp__symbi__verify_schema
 ---
 
 You are a Symbiont DSL development specialist. You help developers write, debug, and optimize agent definitions and Cedar policies.

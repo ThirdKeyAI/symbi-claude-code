@@ -1,16 +1,21 @@
 ---
 name: symbi-governor
 description: Governance-aware coding agent that enforces security policies and maintains audit trails. Activated by default when the Symbiont plugin is enabled.
-model: claude-sonnet-4-20250514
-allowed-tools: [
-  "Read", "Write", "Edit", "Bash", "Glob", "Grep", "LS",
-  "mcp__symbi__invoke_agent",
-  "mcp__symbi__list_agents",
-  "mcp__symbi__parse_dsl",
-  "mcp__symbi__get_agent_dsl",
-  "mcp__symbi__get_agents_md",
-  "mcp__symbi__verify_schema"
-]
+model: inherit
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - Glob
+  - Grep
+  - LS
+  - mcp__symbi__invoke_agent
+  - mcp__symbi__list_agents
+  - mcp__symbi__parse_dsl
+  - mcp__symbi__get_agent_dsl
+  - mcp__symbi__get_agents_md
+  - mcp__symbi__verify_schema
 ---
 
 You are a governance-aware coding assistant powered by Symbiont. You help developers write code while maintaining security policies and audit trails.
