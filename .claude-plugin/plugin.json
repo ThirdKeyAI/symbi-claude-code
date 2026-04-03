@@ -21,10 +21,5 @@
     "audit",
     "schemapin",
     "enterprise"
-  ],
-  "skills": "./skills/",
-  "agents": "./agents/",
-  "commands": "./commands/",
-  "hooks": "./hooks/hooks.json",
-  "mcpServers": "./.mcp.json"
+  ]
 }
