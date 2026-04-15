@@ -100,7 +100,9 @@ If `symbi` is on PATH and `policies/` exists, the hook evaluates Cedar policies 
 
 ### Hooks
 
-Hooks apply to `Write`, `Edit`, `Bash`, and all `mcp__*` tools:
+- **SessionStart** (`install-check.sh`): Verifies `symbi`/`jq` are on PATH and SchemaPin-verifies every server declared in the project's `.mcp.json`. Surfaces tampered and unsigned servers as non-blocking warnings; run `/symbi-verify` or `/symbi-pin` to resolve.
+
+The remaining hooks apply to `Write`, `Edit`, `Bash`, and all `mcp__*` tools:
 
 - **PreToolUse** (`policy-guard.sh`): Blocks dangerous operations (exit code 2)
 - **PreToolUse** (`policy-log.sh`): Advisory logging of state-modifying tool calls
@@ -133,7 +135,15 @@ Best for: individual developers adding governance awareness to their workflow.
 
 ### Mode B -- ORGA-Managed (Runtime-First)
 
-Symbiont's CliExecutor spawns Claude Code as a governed subprocess. The plugin detects `SYMBIONT_MANAGED=true` and connects back to the parent runtime instead of spawning a new server. The outer ORGA Gate provides hard enforcement that cannot be bypassed.
+Symbiont's CliExecutor spawns Claude Code as a governed subprocess. The plugin detects `SYMBIONT_MANAGED=true` so local hooks defer hard enforcement to the outer ORGA Gate, which cannot be bypassed. To point the plugin at the parent runtime's MCP endpoint, override `.mcp.json` at the project or user level with a native HTTP entry pointing at `$SYMBIONT_MCP_URL`:
+
+```json
+{
+  "mcpServers": {
+    "symbi": { "type": "http", "url": "${SYMBIONT_MCP_URL}" }
+  }
+}
+```
 
 ```
 Symbiont Runtime (ORGA Loop)
