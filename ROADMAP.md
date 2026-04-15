@@ -24,8 +24,7 @@ symbi-claude-code/
 ├── scripts/
 │   ├── policy-log.sh            # PreToolUse hook: advisory policy logging
 │   ├── audit-log.sh             # PostToolUse hook: cryptographic audit trail
-│   ├── install-check.sh         # SessionStart hook: verify symbi is installed
-│   └── mcp-wrapper.sh           # MCP transport switching (stdio/HTTP)
+│   └── install-check.sh         # SessionStart hook: verify symbi is installed + SchemaPin-verify pinned MCP servers
 ├── agents/
 │   ├── symbi-governor.md        # Main governance agent
 │   └── symbi-dev.md             # DSL development agent
@@ -750,9 +749,7 @@ Update all hook scripts to check `SYMBIONT_MANAGED` and adjust behavior:
 
 #### Task 6.2: MCP transport switching
 
-Create `scripts/mcp-wrapper.sh`:
-- When `SYMBIONT_MCP_URL` is set, connect to parent runtime's MCP endpoint via HTTP
-- Otherwise, spawn local `symbi mcp` over stdio (default Mode A behavior)
+For Mode B, users override the default stdio `.mcp.json` with a project-level HTTP MCP entry pointing at `SYMBIONT_MCP_URL`. Native Claude Code HTTP transport handles this without a wrapper script, avoiding the `npx @anthropic-ai/mcp-proxy` dependency. (The earlier `scripts/mcp-wrapper.sh` was removed as an orphan -- `.mcp.json` never referenced it.)
 
 #### Task 6.3: Agent SDK skill
 
@@ -822,7 +819,7 @@ Update README and CLAUDE.md with:
 - [ ] Plugin installs from marketplace: `/plugin marketplace add` with repo URL
 - [ ] All scripts are executable (`chmod +x scripts/*.sh`)
 - [ ] Hook scripts detect `SYMBIONT_MANAGED=true` and adjust behavior
-- [ ] MCP wrapper script (`mcp-wrapper.sh`) switches transport based on `SYMBIONT_MCP_URL`
+- [ ] Mode B users can override `.mcp.json` with a native HTTP MCP entry pointing at `SYMBIONT_MCP_URL`
 - [ ] `/symbi-agent-sdk` skill triggers correctly
 - [ ] Example DSL files parse without errors
 

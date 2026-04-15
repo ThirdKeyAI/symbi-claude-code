@@ -53,6 +53,7 @@ claude --plugin-dir ./symbi-claude-code
 | `/symbi-init` | Scaffold a governed agent project with starter files |
 | `/symbi-policy` | Create, edit, or validate Cedar authorization policies |
 | `/symbi-verify` | Verify MCP tool schemas using SchemaPin |
+| `/symbi-pin` | Pin an MCP server's schema (TOFU) so future sessions detect tampering |
 | `/symbi-audit` | Query and analyze cryptographic audit logs |
 | `/symbi-dsl` | Parse, validate, and create Symbiont DSL agent definitions |
 | `/symbi-agent-sdk` | Generate boilerplate for Claude Agent SDK + ORGA governance |
