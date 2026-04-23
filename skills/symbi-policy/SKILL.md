@@ -46,4 +46,4 @@ When asked to create a policy, identify the pattern:
 2. Identify the pattern from the list above
 3. Write the Cedar policy
 4. Save to `policies/` directory
-5. If symbi is available, validate with `symbi dsl parse` to check syntax
+5. Validate Cedar syntax: `symbi policy evaluate --stdin --policies ./policies/ <<< '{}' --json` (returns parse errors if any policy is malformed). For DSL agent files use `symbi dsl --file agents/<name>.dsl`.

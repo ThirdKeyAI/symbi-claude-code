@@ -302,7 +302,7 @@ When asked to create a policy, identify the pattern:
 2. Identify the pattern from the list above
 3. Write the Cedar policy
 4. Save to `policies/` directory
-5. If symbi is available, validate with `symbi dsl parse` to check syntax
+5. Validate Cedar syntax with `symbi policy evaluate --stdin --policies ./policies/` (a parse error in any file produces a non-zero `deny` decision with the offending file:line in the JSON `reason`).
 ```
 
 #### Task 2.3: /symbi-verify skill

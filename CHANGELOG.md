@@ -1,14 +1,22 @@
 # Changelog
 
-## [Unreleased]
+## [0.4.0] - 2026-04-22
 
 ### Added
 - `SessionStart` hook registered in `hooks/hooks.json`, running `install-check.sh` on every session
 - `install-check.sh` now SchemaPin-verifies every server in the project's `.mcp.json` at session start, surfacing tampered and unsigned servers as non-blocking warnings
 - `/symbi-pin` skill for pinning MCP server schemas (TOFU) with explicit trust, re-pin, and conflict guidance
 
+### Changed
+- `policy-guard.sh` Layer 3 (Cedar evaluation) is now a real enforcement path: `symbi policy evaluate --stdin --policies ./policies/` is implemented in Symbiont core (1.11.0+) and emits the bare verdict (`allow`/`deny`) on stdout with structured JSON detail on stderr. Hook tests `[ "$DECISION" = "deny" ]` against the bare stdout — no behaviour change required in the script.
+- `install-check.sh` now relies on the real `symbi schemapin verify` subcommand: exit 1 with "no signature" in stderr means the MCP server is unpinned, exit 1 with "verification failed" means the server config drifted since pinning. Pin records live at `~/.symbiont/schemapin/mcp/<name>.pin` (managed via `symbi schemapin pin / list / unpin`).
+- `skills/symbi-policy/SKILL.md` and `ROADMAP.md`: replaced the non-existent `symbi dsl parse` invocation with the actual CLI surface (`symbi dsl --file <path>` for DSL files, `symbi policy evaluate` for Cedar parse-checking).
+
 ### Removed
 - `scripts/mcp-wrapper.sh` -- orphaned (never referenced from `.mcp.json`) and superseded by native HTTP MCP transport in `.mcp.json`, which avoids the `npx @anthropic-ai/mcp-proxy` dependency
+
+### Notes
+- All previously-stubbed CLI integrations are now wired to real implementations in Symbiont core. The plugin still degrades gracefully when `symbi` is absent: Layer 1 (built-in pattern blocking) and Layer 2 (local deny list) continue to enforce, and advisory logging still records all tool calls.
 
 ## [0.3.0] - 2026-03-08
 
