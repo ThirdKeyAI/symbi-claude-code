@@ -1,5 +1,55 @@
 # Changelog
 
+## [0.5.0] - 2026-05-02
+
+### Added
+- **Built-in Tier 2 protection by default.** `policy-guard.sh` ships with
+  always-active deny patterns for sensitive reads (`.env`, `.ssh/`, `.aws/`,
+  `*.pem`, `*.key`, `id_rsa*`, `secrets/`, `credentials/`,
+  `config/database.yml`, `config/credentials.json`, `config/master.key`,
+  `.npmrc`/`.pypirc`/`.netrc`, `.gcp/`, `gcloud/`), sensitive writes (all
+  read-deny + `.github/workflows/`), and dangerous bash commands (`rm -rf /`,
+  `rm -rf /*`, `rm -rf ~`, `git push --force`/`-f`, `curl|sh`, `wget|bash`,
+  `chmod 777`, `mkfs*`, `dd if=`, fork bombs). `sudo` warns by default.
+  No `local-policy.toml` required.
+- `[mode]` key in `.symbiont/local-policy.toml`: `strict` (sudo blocks),
+  `balanced` (default, sudo warns), `permissive` (built-ins disabled).
+- `[allow]` section in `.symbiont/local-policy.toml` to whitelist exceptions
+  to the built-in deny patterns.
+- `/symbi-protect` slash command — prints active defaults and drops a
+  heavily-commented starter `.symbiont/local-policy.toml`.
+- `/symbi-disable` and `/symbi-enable` slash commands — graceful kill switch
+  via `.symbiont/disabled` marker; every hook no-ops while present.
+- `scripts/lib/json-extract.sh` — shared JSON field extractor with three
+  backends (jq → python3 → narrow bash awk fallback). Removes hard `jq`
+  dependency.
+- Sensitive-file nudge in `install-check.sh`: scans project root + 1 level
+  for `.env`, `id_rsa`, `*.pem`, `.ssh/`, `.aws/` and prints a one-line
+  `/symbi-protect` pointer when no `local-policy.toml` exists yet.
+- `tests/` directory with bash test runner: 78 tests covering built-in
+  defaults, JSON backend parity, chain-bypass resistance, allowlist
+  exemptions, mode switching, and the kill-switch marker.
+
+### Changed
+- `policy-guard.sh` evaluates the **full** command string (not just the
+  first token) for bash deny patterns. Defeats Adversa-style chain bypasses
+  like `true && true && rm -rf /` — the dangerous substring still matches.
+- Hook matchers now include `Read` and `MultiEdit` so sensitive-path reads
+  and multi-edits are inspected.
+- `audit-log.sh` always logs to `.symbiont/audit/tool-usage.jsonl` (no
+  longer gated on the existence of `symbiont.toml`). Every standalone
+  install gets an audit trail by default.
+- `install-check.sh` no longer requires `jq`. Reports backend selection
+  and only warns when neither `jq` nor `python3` is available.
+- README rewrites the lead with the plugin-only value proposition. Runtime
+  sections (Cedar, ORGA, Mode B, dual-mode architecture) move below a
+  "Going further" heading.
+- CLAUDE.md updated to reflect Tier 2 as the default behavior.
+
+### Removed
+- `jq` from the prerequisites section of the README. The hooks now prefer
+  `jq` when available but fall back gracefully.
+
 ## [0.4.0] - 2026-04-22
 
 ### Added
