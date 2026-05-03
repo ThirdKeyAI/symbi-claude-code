@@ -13,7 +13,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Write|Edit|Bash|mcp__*",
+        "matcher": "Read|Write|Edit|MultiEdit|Bash|mcp__*",
         "hooks": [
           {
             "type": "command",
@@ -30,7 +30,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Write|Edit|Bash|mcp__*",
+        "matcher": "Read|Write|Edit|MultiEdit|Bash|mcp__*",
         "hooks": [
           {
             "type": "command",

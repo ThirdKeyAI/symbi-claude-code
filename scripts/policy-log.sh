@@ -1,41 +1,45 @@
 #!/bin/bash
-# PreToolUse hook: Advisory policy logging for tool execution
-# Reads tool invocation from stdin, logs state-modifying actions
+# PreToolUse hook: advisory logging.
 #
-# NOTE: This is advisory only — it logs actions but does not block them.
-# Hard enforcement requires Mode B (ORGA-managed) or Cedar policy evaluation.
+# This runs alongside policy-guard.sh. The guard handles blocking;
+# this script provides telemetry/feedback on what's flowing through.
 #
-# Supports two modes:
-#   Mode A (standalone): Log state-modifying tool calls for awareness
-#   Mode B (SYMBIONT_MANAGED): Outer ORGA Gate handles hard enforcement; we defer
+# Modes:
+#   Mode A (standalone): note state-modifying tool calls
+#   Mode B (SYMBIONT_MANAGED): outer ORGA Gate enforces; we just defer
+#
+# Kill switch: .symbiont/disabled silences this hook.
 
-# Read the tool input from stdin
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/json-extract.sh"
+
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+
+if [ -f "${PROJECT_ROOT}/.symbiont/disabled" ]; then
+    exit 0
+fi
+
 TOOL_INPUT=$(cat)
-TOOL_NAME=$(echo "$TOOL_INPUT" | jq -r '.tool_name // empty' 2>/dev/null)
+TOOL_NAME=$(json_field "$TOOL_INPUT" tool_name)
 
-# Mode B: Inside CliExecutor — the outer ORGA Gate handles hard enforcement.
-# We just log and defer, avoiding redundant policy evaluation.
-if [ -n "$SYMBIONT_MANAGED" ]; then
-    echo "{\"feedback\": \"ORGA-managed: outer Gate enforcing (${TOOL_NAME})\"}" >&2
+if [ -n "${SYMBIONT_MANAGED:-}" ]; then
+    printf '{"feedback":"ORGA-managed: outer Gate enforcing (%s)"}\n' "$TOOL_NAME" >&2
     exit 0
 fi
 
-# Mode A: Standalone plugin — do our own lightweight Cedar check
-
-# Skip check if symbi is not installed or no policies directory exists
-if ! command -v symbi &> /dev/null || [ ! -d "policies" ]; then
-    exit 0
-fi
-
-# Skip check for read-only/safe tools
+# Skip read-only tools — too noisy.
 case "$TOOL_NAME" in
     Read|Glob|Grep|LS|View)
         exit 0
         ;;
 esac
 
-# For tools that modify state, log the action for audit
-# Full Cedar evaluation would go here in a production implementation
-# For now, we provide feedback noting the action is being tracked
-echo "{\"feedback\": \"Action logged: ${TOOL_NAME}\"}" >&2
+# Cedar evaluation only fires when the runtime is installed.
+if ! command -v symbi >/dev/null 2>&1 || [ ! -d "${PROJECT_ROOT}/policies" ]; then
+    exit 0
+fi
+
+# Action note (full Cedar decision happens in policy-guard.sh).
+printf '{"feedback":"Action logged: %s"}\n' "$TOOL_NAME" >&2
 exit 0

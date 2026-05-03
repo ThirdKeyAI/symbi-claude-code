@@ -1,27 +1,46 @@
 #!/bin/bash
-# PostToolUse hook: Append tool usage to audit log
-# Creates a structured log entry for each tool invocation
+# PostToolUse hook: append every tool invocation to the local audit log.
 #
-# Supports two modes:
-#   Mode A (standalone): Logs to local .symbiont/audit/
-#   Mode B (SYMBIONT_MANAGED): Outer runtime handles journaling; we skip local logging
+# Modes:
+#   Mode A (standalone): write to .symbiont/audit/tool-usage.jsonl
+#   Mode B (SYMBIONT_MANAGED): the outer Symbiont runtime journals
+#                              cryptographically; we skip to avoid duplication
+#
+# Kill switch: .symbiont/disabled disables logging too. We still exit 0.
+#
+# Per the plugin's acceptance criteria, every standalone install gets an
+# audit trail by default — no symbiont.toml required.
 
-TOOL_INPUT=$(cat)
-TOOL_NAME=$(echo "$TOOL_INPUT" | jq -r '.tool_name // "unknown"' 2>/dev/null)
-TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/json-extract.sh"
 
-# Mode B: Inside CliExecutor — the outer Symbiont runtime handles
-# cryptographic audit journaling. Skip local JSONL logging to avoid duplication.
-if [ -n "$SYMBIONT_MANAGED" ]; then
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+
+# Kill switch.
+if [ -f "${PROJECT_ROOT}/.symbiont/disabled" ]; then
     exit 0
 fi
 
-# Mode A: Standalone plugin — log locally
-# Only log if symbiont.toml exists (project is governed)
-if [ -f "symbiont.toml" ]; then
-    LOG_DIR=".symbiont/audit"
-    mkdir -p "$LOG_DIR"
-    echo "{\"timestamp\": \"${TIMESTAMP}\", \"tool\": \"${TOOL_NAME}\", \"source\": \"claude-code\"}" >> "${LOG_DIR}/tool-usage.jsonl"
+# Mode B — outer runtime journals; we stay silent.
+if [ -n "${SYMBIONT_MANAGED:-}" ]; then
+    exit 0
 fi
+
+TOOL_INPUT=$(cat)
+TOOL_NAME=$(json_field "$TOOL_INPUT" tool_name)
+[ -z "$TOOL_NAME" ] && TOOL_NAME="unknown"
+
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+LOG_DIR="${PROJECT_ROOT}/.symbiont/audit"
+mkdir -p "$LOG_DIR" 2>/dev/null || exit 0
+
+# JSON-escape tool name (it shouldn't contain quotes, but be defensive).
+TOOL_ESC="${TOOL_NAME//\\/\\\\}"
+TOOL_ESC="${TOOL_ESC//\"/\\\"}"
+
+printf '{"timestamp":"%s","tool":"%s","source":"claude-code"}\n' \
+    "$TIMESTAMP" "$TOOL_ESC" >> "${LOG_DIR}/tool-usage.jsonl"
 
 exit 0
