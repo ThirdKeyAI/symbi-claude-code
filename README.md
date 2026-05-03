@@ -4,138 +4,171 @@
   <img src="symbi-claude-code.png" alt="symbi-claude-code" width="300">
 </p>
 
-A Claude Code plugin that brings [Symbiont](https://symbiont.dev)'s zero-trust AI agent governance to your development workflow. Enforce Cedar authorization policies, verify MCP tool integrity with SchemaPin, maintain cryptographic audit trails, and manage governed agents -- all from within Claude Code.
+One command. Blocks Claude Code from reading your secrets, writing to
+sensitive paths, and running destructive shell commands. No runtime
+required.
 
-## Prerequisites
+## Install
 
-- [Claude Code](https://claude.ai/claude-code) installed
-- `symbi` binary on PATH (optional -- plugin degrades gracefully without it)
-- `jq` for JSON parsing in hook scripts (`apt install jq` / `brew install jq`)
-
-Install `symbi`:
-```bash
-# From source
-cargo install symbi
-
-# Or via Docker
-docker pull ghcr.io/thirdkeyai/symbi:latest
-```
-
-Or run the included install script:
-```bash
-./install.sh
-```
-
-## Installation
-
-**From marketplace:**
 ```
 /plugin marketplace add https://github.com/thirdkeyai/symbi-claude-code
 ```
 
-**Local development:**
-```bash
-claude --plugin-dir ./symbi-claude-code
+That's it. The plugin's hooks now fire on every tool call:
+
+- **Reads** of `.env`, `.env.*`, `.ssh/`, `.aws/`, `.gcp/`, `.npmrc`,
+  `.pypirc`, `.netrc`, `*.pem`, `*.key`, `id_rsa`/`id_ed25519`/`id_ecdsa`,
+  `secrets/`, `credentials/`, `config/database.yml`,
+  `config/credentials.json`, `config/master.key` are blocked.
+- **Writes** to all of the above, plus `.github/workflows/`, are blocked.
+- **Bash** commands matching `rm -rf /`, `rm -rf ~`, `git push --force`,
+  `curl ... | sh`, `wget ... | bash`, `chmod 777`, `mkfs*`, `dd if=`, fork
+  bombs are blocked. `sudo` is warned (block in strict mode).
+- Every tool call is appended to `.symbiont/audit/tool-usage.jsonl` for
+  later review.
+
+Read templates (`.env.example`, `.env.sample`, `.env.test`) are exempt.
+
+## Customize
+
+```
+/symbi-protect
 ```
 
-## Quick Start
-
-1. Install the plugin (see above)
-2. Run `/symbi-init` to scaffold a governed project
-3. Define agents in `agents/*.dsl`
-4. Create Cedar policies in `policies/*.cedar`
-5. Use `/symbi-status` to verify everything is connected
-
-## Skills
-
-| Skill | Description |
-|-------|-------------|
-| `/symbi-init` | Scaffold a governed agent project with starter files |
-| `/symbi-policy` | Create, edit, or validate Cedar authorization policies |
-| `/symbi-verify` | Verify MCP tool schemas using SchemaPin |
-| `/symbi-pin` | Pin an MCP server's schema (TOFU) so future sessions detect tampering |
-| `/symbi-audit` | Query and analyze cryptographic audit logs |
-| `/symbi-dsl` | Parse, validate, and create Symbiont DSL agent definitions |
-| `/symbi-agent-sdk` | Generate boilerplate for Claude Agent SDK + ORGA governance |
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `/symbi-status` | Check health of the Symbiont runtime and installed components |
-
-## Agents
-
-| Agent | Description |
-|-------|-------------|
-| `symbi-governor` | Governance-aware coding agent (default). Enforces policies and maintains audit trails. |
-| `symbi-dev` | DSL development specialist for writing agents and Cedar policies. |
-
-## Governance Tiers
-
-The plugin provides three progressive levels of protection:
-
-### Tier 1: Awareness (default)
-
-All tool calls proceed. State-modifying actions are logged to `.symbiont/audit/tool-usage.jsonl` for post-hoc review.
-
-### Tier 2: Protection
-
-Create `.symbiont/local-policy.toml` to block dangerous patterns:
+Drops a heavily-commented `.symbiont/local-policy.toml` you can edit.
+Add project-specific paths or commands to `[deny]`. List exceptions in
+`[allow]`. Switch modes via `[mode]`:
 
 ```toml
+[mode]
+mode = "balanced"       # built-ins active, sudo warns (default)
+# mode = "strict"       # built-ins + sudo hard-blocked
+# mode = "permissive"   # built-ins disabled, only this file enforced
+
 [deny]
-paths = [".env", ".ssh/", ".aws/"]
-commands = ["rm -rf", "git push --force"]
-branches = ["main", "master", "production"]
+paths    = ["my-private-dir/", "*.backup"]
+commands = ["forbidden-cmd"]
+branches = ["main", "master"]
+
+[allow]
+paths    = [".env.template"]
 ```
 
-The `policy-guard.sh` hook blocks matching operations with exit code 2. Built-in patterns (destructive commands, force pushes, writes to sensitive files) are always blocked regardless of config.
+Local rules **extend** the built-ins, not replace them.
 
-No `symbi` binary required. Works with both symbi-claude-code and symbi-gemini-cli.
+## Disable / re-enable
 
-### Tier 3: Governance
-
-If `symbi` is on PATH and `policies/` exists, the hook evaluates Cedar policies for formal authorization decisions.
-
-### Hooks
-
-- **SessionStart** (`install-check.sh`): Verifies `symbi`/`jq` are on PATH and SchemaPin-verifies every server declared in the project's `.mcp.json`. Surfaces tampered and unsigned servers as non-blocking warnings; run `/symbi-verify` or `/symbi-pin` to resolve.
-
-The remaining hooks apply to `Write`, `Edit`, `Bash`, and all `mcp__*` tools:
-
-- **PreToolUse** (`policy-guard.sh`): Blocks dangerous operations (exit code 2)
-- **PreToolUse** (`policy-log.sh`): Advisory logging of state-modifying tool calls
-- **PostToolUse** (`audit-log.sh`): Logs tool usage to `.symbiont/audit/tool-usage.jsonl`
-
-## MCP Tools
-
-When `symbi` is on PATH, the plugin connects to the Symbiont MCP server exposing:
-
-- `invoke_agent` -- Run a governed agent with a prompt
-- `list_agents` -- List available agents from `agents/*.dsl`
-- `parse_dsl` -- Parse and validate DSL files
-- `get_agent_dsl` -- Read an agent's DSL definition
-- `get_agents_md` -- Get the project's AGENTS.md content
-- `verify_schema` -- Verify a tool schema with SchemaPin
-
-## Dual-Mode Architecture
-
-The plugin supports two integration patterns:
-
-### Mode A -- Standalone (Plugin-First)
-
-Developer installs the plugin directly into Claude Code. The plugin spawns its own `symbi mcp` server, provides advisory policy checking via hooks, and logs to local audit files.
+Drop a marker instead of uninstalling:
 
 ```
-Developer -> Claude Code + symbi plugin -> symbi mcp (stdio)
+/symbi-disable        # creates .symbiont/disabled — every hook no-ops
+/symbi-enable         # removes the marker
 ```
 
-Best for: individual developers adding governance awareness to their workflow.
+## Why not just use `settings.json` deny rules?
 
-### Mode B -- ORGA-Managed (Runtime-First)
+Hand-rolled `permissions.deny` lists work, but they have known weaknesses:
 
-Symbiont's CliExecutor spawns Claude Code as a governed subprocess. The plugin detects `SYMBIONT_MANAGED=true` so local hooks defer hard enforcement to the outer ORGA Gate, which cannot be bypassed. To point the plugin at the parent runtime's MCP endpoint, override `.mcp.json` at the project or user level with a native HTTP entry pointing at `$SYMBIONT_MCP_URL`:
+| Concern              | `settings.json` deny | `symbi-claude-code`            |
+| -------------------- | -------------------- | ------------------------------ |
+| Bypass via chained shell commands | susceptible — only the first token is matched in some configurations | the full command string is searched, so `true && rm -rf /` still matches `rm -rf /` |
+| Pattern upkeep       | enumerated by hand   | structured defaults shipped + extended via TOML |
+| Audit trail          | none                 | JSONL per tool call            |
+| Read-side protection | tool deny only       | sensitive paths blocked across `Read`/`Write`/`Edit` |
+| Override granularity | global               | per-project `[allow]` exceptions |
+| Upgrade path         | none                 | drop-in Cedar policy evaluation when `symbi` is installed |
+
+The `symbi-claude-code` hooks treat the command line as a string and search
+for deny patterns anywhere in it. They don't try to parse shell syntax —
+that's a rabbit hole — but they do match patterns regardless of leading
+chain-control tokens.
+
+## Prerequisites
+
+- [Claude Code](https://claude.ai/claude-code).
+- `jq` (preferred) or `python3` for hook JSON parsing. The plugin falls
+  back to a narrow pure-bash parser if neither is present, with reduced
+  fidelity on uncommon escape sequences.
+
+## Slash commands
+
+| Command          | Purpose |
+| ---------------- | ------- |
+| `/symbi-protect` | Show what's blocked and drop a starter `local-policy.toml` |
+| `/symbi-disable` | Drop the kill-switch marker so every hook no-ops |
+| `/symbi-enable`  | Remove the kill-switch marker |
+| `/symbi-status`  | Health check of plugin + (optional) runtime |
+| `/symbi-audit`   | Query and analyze the audit log |
+
+The runtime-aware commands below light up only when the `symbi` binary is
+on PATH (see "Going further").
+
+| Command            | Purpose |
+| ------------------ | ------- |
+| `/symbi-init`      | Scaffold a runtime-managed governed project |
+| `/symbi-policy`    | Author, edit, validate Cedar policies |
+| `/symbi-verify`    | Verify MCP tool schemas with SchemaPin |
+| `/symbi-pin`       | Pin an MCP server's schema (TOFU) |
+| `/symbi-dsl`       | Author and validate Symbiont DSL agents |
+| `/symbi-agent-sdk` | Generate Claude Agent SDK + ORGA boilerplate |
+
+## Tests
+
+```
+bash tests/run-tests.sh
+```
+
+Covers the built-in deny defaults, JSON-backend parity (jq / python3 /
+bash fallback), chain-bypass resistance, allowlist exemptions, mode
+switching, and the kill-switch marker.
+
+---
+
+## Going further: runtime-managed governance
+
+If you install the `symbi` binary, the plugin transparently upgrades:
+
+- **Tier 3 — Cedar evaluation.** When `symbi` is on PATH and the project
+  has a `policies/` directory, the policy hook evaluates Cedar policies
+  for formal authorization decisions in addition to the built-in checks.
+- **MCP tools.** The plugin connects to a `symbi mcp` server exposing
+  `invoke_agent`, `list_agents`, `parse_dsl`, `get_agent_dsl`,
+  `get_agents_md`, `verify_schema`.
+- **SchemaPin verification.** On session start, every server in
+  `.mcp.json` is verified; tampered or unsigned servers are surfaced.
+
+Install:
+
+```bash
+cargo install symbi
+# or
+docker pull ghcr.io/thirdkeyai/symbi:latest
+```
+
+Or run the included script:
+
+```bash
+./install.sh
+```
+
+## Dual-mode architecture
+
+### Mode A — Standalone (plugin-first)
+
+Developer installs the plugin into Claude Code. Hooks are advisory unless
+a Cedar runtime is also installed. This is what you get from the marketplace
+install above.
+
+```
+Developer -> Claude Code + symbi plugin -> (optional) symbi mcp
+```
+
+### Mode B — ORGA-managed (runtime-first)
+
+Symbiont's `CliExecutor` spawns Claude Code as a governed subprocess. The
+plugin detects `SYMBIONT_MANAGED=true` and defers hard enforcement to the
+outer ORGA Gate, which cannot be bypassed. Point the plugin at the parent
+runtime's MCP endpoint by overriding `.mcp.json`:
 
 ```json
 {
@@ -152,43 +185,53 @@ Symbiont Runtime (ORGA Loop)
       -> Plugin connects back to parent MCP server
 ```
 
-Best for: automated pipelines, dark factory deployments, enterprise governance.
+Best for automated pipelines and enterprise governance. See
+`examples/cli-executor/` for a complete setup.
 
-See `examples/` for complete setups of each mode.
+### Mode B environment variables
 
-## Configuration
+- `SYMBIONT_MANAGED=true` — signals managed mode
+- `SYMBIONT_MCP_URL` — parent runtime's MCP endpoint
+- `SYMBIONT_RUNTIME_SOCKET` — Unix socket for runtime communication
+- `SYMBIONT_SESSION_ID` — audit log correlation ID
+- `SYMBIONT_BUDGET_TOKENS` — token budget for execution
+- `SYMBIONT_BUDGET_TIMEOUT` — timeout for execution
 
-`settings.json` sets the default agent:
-```json
-{
-  "agent": "symbi-governor"
-}
-```
+## Hooks
 
-Project-level configuration lives in `symbiont.toml` (created by `/symbi-init`).
+| Event         | Script             | Behavior |
+| ------------- | ------------------ | -------- |
+| SessionStart  | `install-check.sh` | Detects backends, nudges on first session if sensitive files present, runs SchemaPin verification when runtime is installed |
+| PreToolUse    | `policy-guard.sh`  | Blocks deny matches with exit code 2 |
+| PreToolUse    | `policy-log.sh`    | Advisory action note |
+| PostToolUse   | `audit-log.sh`     | Append JSONL line to `.symbiont/audit/tool-usage.jsonl` |
 
-## File Conventions
+All hooks honor `.symbiont/disabled` (kill switch) and `SYMBIONT_MANAGED`
+(Mode B deference).
 
-| Path | Purpose |
-|------|---------|
-| `agents/*.dsl` | Agent DSL definitions |
-| `policies/*.cedar` | Cedar authorization policies |
-| `symbiont.toml` | Symbiont runtime configuration |
-| `AGENTS.md` | Agent manifest |
-| `.symbiont/audit/` | Audit log output |
-| `.symbiont/local-policy.toml` | Local deny list for blocking protection |
+## File conventions
+
+| Path                          | Purpose |
+| ----------------------------- | ------- |
+| `.symbiont/local-policy.toml` | Project deny/allow rules (extends built-ins) |
+| `.symbiont/disabled`          | Kill-switch marker |
+| `.symbiont/audit/`            | Local audit log output |
+| `agents/*.dsl`                | (runtime) Agent DSL definitions |
+| `policies/*.cedar`            | (runtime) Cedar authorization policies |
+| `symbiont.toml`               | (runtime) Symbiont runtime configuration |
+| `AGENTS.md`                   | (runtime) Agent manifest |
 
 ## Examples
 
-| Directory | Description |
-|-----------|-------------|
-| `examples/standalone/` | Mode A setup for individual developers |
-| `examples/cli-executor/` | Mode B setup with DSL + Cedar policy for ORGA-wrapped Claude Code |
-| `examples/agent-sdk/` | Agent SDK wrapper pattern for headless/programmatic agents |
+| Directory                | Description |
+| ------------------------ | ----------- |
+| `examples/standalone/`   | Mode A setup for individual developers |
+| `examples/cli-executor/` | Mode B setup with DSL + Cedar policy |
+| `examples/agent-sdk/`    | Agent SDK wrapper pattern for headless agents |
 
 ## License
 
-Apache 2.0 -- see [LICENSE](LICENSE).
+Apache 2.0 — see [LICENSE](LICENSE).
 
 ## Links
 
@@ -198,4 +241,6 @@ Apache 2.0 -- see [LICENSE](LICENSE).
 
 ## Disclaimer
 
-This project is not affiliated with, endorsed by, or sponsored by Anthropic, PBC. "Claude" and "Claude Code" are trademarks of Anthropic, PBC. "Symbiont" and "ThirdKey" are trademarks of ThirdKey AI.
+This project is not affiliated with, endorsed by, or sponsored by Anthropic, PBC.
+"Claude" and "Claude Code" are trademarks of Anthropic, PBC.
+"Symbiont" and "ThirdKey" are trademarks of ThirdKey AI.
