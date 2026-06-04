@@ -1,6 +1,15 @@
 
 # ROADMAP — symbi-claude-code Plugin Implementation Plan
 
+> **Status (historical document).** This is the original Phase 1–6
+> implementation plan, kept for context. All phases are complete. Some
+> snippets below reflect the *original* design and are now out of date —
+> e.g. the plugin shipped as **plugin-first** (default-on Tier 2 protection
+> with the runtime as an opt-in upgrade), agents use `model: inherit`, and
+> SessionStart hooks are fully supported and in use. For current, accurate
+> behavior see **CHANGELOG.md** and **CLAUDE.md**; treat this file as the
+> "how we got here," not the spec.
+
 ## Project Overview
 
 Build a Claude Code plugin that brings Symbiont's trust stack (ORGA, Cedar policies, SchemaPin, sandboxing) to Claude Code users. The plugin exposes Symbiont agents as MCP tools, enforces Cedar policies via hooks, and provides skills for agent development and governance.
@@ -575,7 +584,10 @@ Create `hooks/hooks.json`:
 }
 ```
 
-**Note**: SessionStart hooks are not yet widely supported in the plugin system. The install check can be moved to a PreToolUse hook on first invocation, or handled by the CLAUDE.md instructions.
+**Note** (superseded): SessionStart hooks are fully supported and the plugin
+registers `install-check.sh` there. Its output uses the documented SessionStart
+contract — `systemMessage` for user notices and `hookSpecificOutput.additionalContext`
+for model context, emitted on stdout.
 
 ---
 

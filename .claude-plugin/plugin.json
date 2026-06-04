@@ -1,6 +1,6 @@
 {
   "name": "symbi",
-  "description": "Zero-trust AI agent governance for Claude Code. Adds ORGA runtime, Cedar policy enforcement, SchemaPin tool verification, and cryptographic audit trails to your development workflow.",
+  "description": "Default-on protection that blocks Claude Code from reading secrets, writing to sensitive paths, and running destructive shell commands. No runtime required. Opt-in upgrade path to Cedar policy evaluation, SchemaPin tool verification, and ORGA-governed agents when the symbi binary is installed.",
   "version": "0.5.0",
   "author": {
     "name": "ThirdKey AI",

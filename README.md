@@ -71,7 +71,7 @@ Hand-rolled `permissions.deny` lists work, but they have known weaknesses:
 
 | Concern              | `settings.json` deny | `symbi-claude-code`            |
 | -------------------- | -------------------- | ------------------------------ |
-| Bypass via chained shell commands | susceptible — only the first token is matched in some configurations | the full command string is searched, so `true && rm -rf /` still matches `rm -rf /` |
+| Bypass via chained shell commands | pattern rules match what you enumerate; reordered or chained commands can slip past variants you didn't list | the full command string is searched, so `true && rm -rf /` still matches `rm -rf /` |
 | Pattern upkeep       | enumerated by hand   | structured defaults shipped + extended via TOML |
 | Audit trail          | none                 | JSONL per tool call            |
 | Read-side protection | tool deny only       | sensitive paths blocked across `Read`/`Write`/`Edit` |
@@ -203,7 +203,7 @@ Best for automated pipelines and enterprise governance. See
 | ------------- | ------------------ | -------- |
 | SessionStart  | `install-check.sh` | Detects backends, nudges on first session if sensitive files present, runs SchemaPin verification when runtime is installed |
 | PreToolUse    | `policy-guard.sh`  | Blocks deny matches with exit code 2 |
-| PreToolUse    | `policy-log.sh`    | Advisory action note |
+| PreToolUse    | `policy-log.sh`    | Advisory slot (currently silent; recording handled by `audit-log.sh`) |
 | PostToolUse   | `audit-log.sh`     | Append JSONL line to `.symbiont/audit/tool-usage.jsonl` |
 
 All hooks honor `.symbiont/disabled` (kill switch) and `SYMBIONT_MANAGED`
