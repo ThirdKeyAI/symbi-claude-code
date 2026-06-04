@@ -43,8 +43,11 @@ rules; it never replaces them unless `[mode]=permissive` is set.
   (jq → python3 → bash), nudges on sensitive files when no
   `local-policy.toml` exists, runs SchemaPin verification when `symbi` is
   on PATH.
-- `scripts/policy-guard.sh` — PreToolUse. Hard-blocks deny matches.
-- `scripts/policy-log.sh` — PreToolUse. Advisory feedback only.
+- `scripts/policy-guard.sh` — PreToolUse. Hard-blocks deny matches
+  (plain-text reason on stderr + exit 2; `sudo` warns via stdout
+  `systemMessage`).
+- `scripts/policy-log.sh` — PreToolUse. Silent advisory slot (recording is
+  handled by `audit-log.sh`; retained for future signals).
 - `scripts/audit-log.sh` — PostToolUse. Appends JSONL to
   `.symbiont/audit/tool-usage.jsonl`. Always logs (no `symbiont.toml` gate).
 

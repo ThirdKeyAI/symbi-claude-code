@@ -1,5 +1,47 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- **Hook output now follows the documented Claude Code contract.** Blocks emit
+  a plain-text reason on stderr + exit 2 (fail-closed — the non-zero exit
+  blocks even if the message has a formatting bug), replacing the custom
+  `{"block":true,...}`-on-stderr JSON that Claude Code showed to the model
+  verbatim. The SessionStart sensitive-file nudge and the `sudo` warning now
+  surface through stdout `systemMessage` / `hookSpecificOutput.additionalContext`
+  instead of `{"feedback":...}` on stderr+exit 0, which the contract drops
+  silently — so those notices (including the onboarding nudge) never actually
+  reached the user before. Advisory output deliberately omits
+  `permissionDecision`, so the normal permission-prompt flow is untouched.
+
+### Changed
+- `plugin.json` description rewritten to the plugin-first value proposition,
+  matching `marketplace.json` and the README (was still the runtime-first
+  "Zero-trust AI agent governance… Adds ORGA runtime…" lead).
+- `/symbi-audit` now reads the always-on local `.symbiont/audit/tool-usage.jsonl`
+  log (no runtime required), with the runtime cryptographic trail as the
+  upgrade path — previously the skill only described the runtime/MCP path.
+- `/symbi-status` now leads with plugin posture (mode, kill-switch state, audit
+  log, JSON backend) before the optional runtime checks.
+- `policy-log.sh` no longer emits a per-call note. It was written to the
+  dropped stderr+exit 0 channel (never surfaced), and per-call notices would be
+  UI spam; recording is handled by the PostToolUse audit log.
+
+### Added
+- Repo `.gitignore` (`.claude/settings.local.json`, `.symbiont/audit/`,
+  `.symbiont/disabled`).
+- Output-channel regression tests for `policy-guard.sh` and a new
+  `tests/test_install_check.sh` (suite now 84 tests).
+
+### Removed
+- Default-agent activation. The plugin no longer ships `settings.json` with
+  `{"agent":"symbi-governor"}`, which silently ran the user's main session as
+  symbi-governor — adopting its restricted `allowed-tools` (dropping WebSearch,
+  WebFetch, subagents, TodoWrite, …) and a runtime-flavored persona. That
+  contradicted the plugin-first, lightweight posture. `symbi-governor` and
+  `symbi-dev` remain available as opt-in subagents; protection is unaffected
+  (hooks are wired via `hooks.json`, independent of the agent setting).
+
 ## [0.5.0] - 2026-05-02
 
 ### Added

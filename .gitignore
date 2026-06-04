@@ -1,0 +1,9 @@
+# Personal / machine-local Claude Code settings (never commit)
+.claude/settings.local.json
+
+# Symbiont runtime artifacts — generated locally, not part of the plugin
+.symbiont/audit/
+.symbiont/disabled
+
+# OS noise
+.DS_Store

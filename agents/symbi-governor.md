@@ -1,6 +1,6 @@
 ---
 name: symbi-governor
-description: Governance-aware coding agent that enforces security policies and maintains audit trails. Activated by default when the Symbiont plugin is enabled.
+description: Governance-aware coding agent for Symbiont-managed projects — enforces Cedar policies, verifies MCP tools with SchemaPin, and maintains audit trails. Opt-in (not activated by default); invoke it when working in a project that has the symbi runtime (policies/, agents/, symbiont.toml).
 model: inherit
 allowed-tools:
   - Read

@@ -36,21 +36,25 @@ fi
 TOOL_INPUT=$(cat)
 TOOL_NAME=$(json_field "$TOOL_INPUT" tool_name)
 
-# Block helper: emit JSON message on stderr and exit 2 (Claude Code's
-# convention for "block this tool call and surface the message").
+# Block helper. Per the Claude Code hook contract, exit code 2 blocks the
+# tool call and surfaces the hook's *stderr* (as plain text) to the model
+# as the reason. We deliberately use exit 2 + plain stderr rather than a
+# stdout permissionDecision="deny" so the block fails CLOSED: even if the
+# message had a formatting bug, the non-zero exit still blocks the call.
 block() {
-    # JSON-escape the message: backslash and quote only — sufficient for
-    # the static strings we emit here.
-    local msg="${1//\\/\\\\}"
-    msg="${msg//\"/\\\"}"
-    printf '{"block": true, "message": "%s"}\n' "$msg" >&2
+    printf '%s\n' "$1" >&2
     exit 2
 }
 
+# Advisory helper: surface a non-blocking notice WITHOUT changing the
+# permission decision. A top-level "systemMessage" (stdout, exit 0) shows a
+# warning to the user; omitting permissionDecision leaves the normal
+# permission-prompt flow intact (we must NOT emit permissionDecision="allow"
+# here — that would auto-approve the tool and bypass the user's settings).
 warn() {
     local msg="${1//\\/\\\\}"
     msg="${msg//\"/\\\"}"
-    printf '{"feedback": "%s"}\n' "$msg" >&2
+    printf '{"systemMessage":"%s"}\n' "$msg"
 }
 
 # Determine mode from local-policy.toml [mode] key. Default: balanced.

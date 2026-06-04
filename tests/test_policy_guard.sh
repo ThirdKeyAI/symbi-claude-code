@@ -35,6 +35,18 @@ assert_pass() {
     fi
 }
 
+# Capture stdout and stderr on separate channels for output-contract checks.
+# Sets globals STDOUT / STDERR and returns the guard's exit code.
+run_guard_split() {
+    local payload="$1" workdir="$2" out err rc
+    out=$(mktemp); err=$(mktemp)
+    env CLAUDE_PROJECT_DIR="$workdir" bash "$GUARD" <<<"$payload" >"$out" 2>"$err"
+    rc=$?
+    STDOUT=$(cat "$out"); STDERR=$(cat "$err")
+    rm -f "$out" "$err"
+    return $rc
+}
+
 WORKDIR=$(mktemp -d)
 trap 'rm -rf "$WORKDIR"' EXIT
 
@@ -139,6 +151,29 @@ if [ "$rc" = "0" ]; then
 else
     printf 'FAIL  Mode B defers (got %s)\n' "$rc"; fail=$((fail+1))
 fi
+
+echo ""
+echo "--- output channels (Claude Code hook contract) ---"
+CHANWD=$(mktemp -d)
+# Block reason must be PLAIN TEXT on stderr (not legacy {"block":...} JSON),
+# stdout must be empty, exit 2 (fail-closed).
+run_guard_split '{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}' "$CHANWD"; rc=$?
+if [ "$rc" = "2" ] && [ -n "$STDERR" ] && [ -z "$STDOUT" ] \
+   && ! printf '%s' "$STDERR" | grep -q '"block"'; then
+    printf 'PASS  block: plain-text stderr + exit 2\n'; pass=$((pass+1))
+else
+    printf 'FAIL  block channel (rc=%s stdout=[%s] stderr=[%s])\n' "$rc" "$STDOUT" "$STDERR"; fail=$((fail+1))
+fi
+# Sudo (balanced) warns via stdout systemMessage, exits 0, and must NOT
+# auto-allow (no permissionDecision field).
+run_guard_split '{"tool_name":"Bash","tool_input":{"command":"sudo apt update"}}' "$CHANWD"; rc=$?
+if [ "$rc" = "0" ] && printf '%s' "$STDOUT" | grep -q '"systemMessage"' \
+   && ! printf '%s' "$STDOUT" | grep -q 'permissionDecision'; then
+    printf 'PASS  sudo warn: stdout systemMessage, no permissionDecision\n'; pass=$((pass+1))
+else
+    printf 'FAIL  sudo warn channel (rc=%s stdout=[%s])\n' "$rc" "$STDOUT"; fail=$((fail+1))
+fi
+rm -rf "$CHANWD"
 
 echo ""
 echo "policy_guard: $pass passed, $fail failed"
