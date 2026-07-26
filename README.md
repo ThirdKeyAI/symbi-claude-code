@@ -29,6 +29,27 @@ That's it. The plugin's hooks now fire on every tool call:
 
 Read templates (`.env.example`, `.env.sample`, `.env.test`) are exempt.
 
+### Cursor
+
+The same rules enforce in Cursor. Clone this repo anywhere, then from your
+project root:
+
+```
+bash /path/to/symbi-claude-code/adapters/cursor/install.sh
+```
+
+That writes (or safely merges into) `.cursor/hooks.json`, registering a
+`preToolUse` hook with `failClosed: true`. One difference from Claude Code:
+Cursor has an `ask` verdict, so a warn — `sudo` in balanced mode — becomes a
+user prompt instead of a passive notice.
+
+| Harness | exec | read | write | notes |
+| ------- | ---- | ---- | ----- | ----- |
+| Claude Code | yes | yes | yes | `PreToolUse`, exit 2 blocks |
+| Cursor | yes | yes | yes | `preToolUse` covers Shell/Read/Write/MCP |
+| Codex CLI | planned | no | no | harness fires `PreToolUse` for Bash only |
+| Pi | planned | planned | planned | needs the `pi-hooks` extension |
+
 ## Customize
 
 ```

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "[ ! -x \"__SYMBI_ROOT__/scripts/cursor-guard.sh\" ] || bash \"__SYMBI_ROOT__/scripts/cursor-guard.sh\"",
+        "timeout": 10,
+        "failClosed": true
+      }
+    ]
+  }
+}

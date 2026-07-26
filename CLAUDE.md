@@ -43,9 +43,9 @@ rules; it never replaces them unless `[mode]=permissive` is set.
   (jq → python3 → bash), nudges on sensitive files when no
   `local-policy.toml` exists, runs SchemaPin verification when `symbi` is
   on PATH.
-- `scripts/policy-guard.sh` — PreToolUse. Hard-blocks deny matches
-  (plain-text reason on stderr + exit 2; `sudo` warns via stdout
-  `systemMessage`).
+- `scripts/policy-guard.sh` — PreToolUse. Claude adapter only: maps tool
+  names to `read`/`write`/`exec`, calls the engine, translates the verdict
+  (deny → plain-text stderr + exit 2; warn → stdout `systemMessage`).
 - `scripts/policy-log.sh` — PreToolUse. Silent advisory slot (recording is
   handled by `audit-log.sh`; retained for future signals).
 - `scripts/audit-log.sh` — PostToolUse. Appends JSONL to
@@ -53,6 +53,38 @@ rules; it never replaces them unless `[mode]=permissive` is set.
 
 All hooks check the `.symbiont/disabled` marker first and the
 `SYMBIONT_MANAGED` env var second.
+
+## Policy engine (harness-free)
+
+`scripts/core/decide.sh` holds **all** policy semantics — built-in deny
+defaults, mode handling, `local-policy.toml` parsing, Cedar. It knows
+nothing about any harness: no JSON payload shapes, no tool names, no
+exit-code contracts.
+
+```
+decide.sh <read|write|exec> <path-or-command>
+  → stdout, one line:  allow | warn<TAB>reason | deny<TAB>reason
+  → exit status always 0 (the verdict is the line, not the code)
+  → project root from SYMBIONT_PROJECT_DIR (default $PWD)
+```
+
+Adapters own the translation both ways. Add a harness by adding an
+adapter — never by editing the engine.
+
+| Adapter | Harness contract | allow / warn / deny |
+| ------- | ---------------- | ------------------- |
+| `scripts/policy-guard.sh` | `PreToolUse` on stdin | exit 0 / stdout `systemMessage` / stderr + exit 2 |
+| `scripts/cursor-guard.sh` | `preToolUse` on stdin | `permission` = `allow` / `ask` / `deny` |
+
+Cursor is wired by `adapters/cursor/install.sh`, which renders
+`adapters/cursor/hooks.json` with an absolute path to this checkout and
+merges it into any existing `.cursor/hooks.json` via jq (backing the
+original up first). Cursor's `ask` verdict has no Claude equivalent, so a
+warn prompts the user there and merely notifies here — same policy,
+stricter harness.
+
+`tests/test_decide.sh` pins the output contract; `tests/test_policy_guard.sh`
+covers semantics end-to-end through the Claude adapter.
 
 ## JSON parsing in hooks
 
@@ -95,8 +127,10 @@ kill-switch marker. Run before committing changes to hooks.
 When the `symbi` binary is installed, additional features light up
 automatically — no plugin changes required:
 
-- **Tier 3 (Cedar evaluation)**: `policy-guard.sh` runs `symbi policy
-  evaluate --stdin --policies ./policies/` after the built-in checks pass.
+- **Tier 3 (Cedar evaluation)**: `core/decide.sh` runs `symbi policy
+  evaluate --stdin --policies ./policies/` after the built-in checks pass,
+  piping the normalized `{"action":…,"target":…}` envelope. One Cedar
+  policy set therefore covers every harness adapter.
 - **MCP tools**: the plugin connects to a `symbi mcp` server exposing
   `invoke_agent`, `list_agents`, `parse_dsl`, `get_agent_dsl`,
   `get_agents_md`, `verify_schema`.

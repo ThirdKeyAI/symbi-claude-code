@@ -848,6 +848,70 @@ This plugin depends on the `symbi` binary being available. The MCP server is bui
 
 If the symbi binary is not installed, the plugin degrades gracefully — skills and agents still provide guidance, hooks still log, but MCP tools are unavailable.
 
+## Universal adapters
+
+All policy semantics live in `scripts/core/decide.sh`, which takes
+`<read|write|exec> <target>` and prints one line: `allow`,
+`warn<TAB>reason`, or `deny<TAB>reason`. Adding a harness means adding an
+adapter that translates its payload in and its verdict out. The engine is
+never edited for a new harness.
+
+Shipped: Claude Code (`scripts/policy-guard.sh`), Cursor
+(`scripts/cursor-guard.sh`).
+
+### Next: Pi
+
+Pi's payloads are already Claude-shaped, so this is the cheapest remaining
+adapter — roughly `policy-guard.sh` with a different verdict encoder.
+
+- `scripts/pi-guard.sh` — reads `tool_name` / `tool_input.command` /
+  `tool_input.file_path` exactly as the Claude adapter does. Sets
+  `SYMBIONT_PROJECT_DIR` from the payload's `cwd`.
+- Verdict encoding: deny → stdout
+  `{"permissionDecision":"deny","permissionDecisionReason":"..."}`. Pi has
+  no `ask`, so warn follows the Claude path (advisory message, decision
+  untouched — never emit `permissionDecision:"allow"`, that would bypass
+  the user's own permission settings).
+- `adapters/pi/settings.json` — template registering `PreToolUse`, merged
+  into `.pi/settings.json` by `adapters/pi/install.sh` (same jq-merge +
+  backup flow as the Cursor installer).
+- `tests/test_pi_guard.sh` — mirrors `test_cursor_guard.sh`: payload shapes,
+  action derivation, `permissionDecision` encoding, kill switch.
+
+**Blocking unknown, resolve first:** Pi core's native command-hook support
+is unconfirmed. The Claude-compatible `PreToolUse` contract above comes from
+the third-party `pi-hooks` extension, and `oh-my-pi` exposes a different
+model entirely — in-process TS handlers at `.omp/hooks/pre/*.ts` returning
+`{block: true, reason}`. Verify against a real Pi install before writing the
+adapter. If only the in-process model exists, the adapter becomes a thin JS
+shim that shells out to `decide.sh` and maps the line to `{block, reason}` —
+the engine still does not change.
+
+Because enforcement may depend on a user-installed extension, Pi coverage
+must be reported as *measured*, not claimed (see below).
+
+### Then: Codex CLI, and honest coverage
+
+Codex fires `PreToolUse` for Bash only — `apply_patch`, file reads/writes,
+and MCP calls do not reach a hook. It is also experimental, off by default,
+and unavailable on Windows. The adapter is easy; the risk is that a user
+sees a "protected" badge while file reads sail through.
+
+So the adapter work is paired with a coverage check: `/symbi-status` (and a
+`symbi-guard doctor`) reports per-harness enforcement it has actually
+verified — "Codex: shell enforced, file reads unprotected (harness
+limitation)" — rather than a uniform claim. Degrading silently is the one
+failure mode a security plugin cannot have.
+
+### Also planned
+
+- `symbi-guard scan <path>` — run the same deny rules over a repo or PR
+  diff with no agent and no API key. Enables a GitHub Action and a
+  pre-commit hook, and makes the engine useful outside any harness.
+- Rename the repository once a second adapter ships. GitHub redirects the
+  old path forever, so clones, marketplace installs, and issue links keep
+  working; a new repository would discard stars, issues, and history.
+
 ## Future Enhancements (Post-v0.2.0)
 
 - **Anthropic official marketplace submission**: Submit via `anthropics/claude-plugins-official` submission form
