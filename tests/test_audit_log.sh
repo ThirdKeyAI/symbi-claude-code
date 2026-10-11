@@ -1,7 +1,7 @@
 #!/bin/bash
 # audit-log.sh should:
 #   - write a JSONL line per tool call to .symbiont/audit/tool-usage.jsonl
-#   - skip silently when SYMBIONT_MANAGED is set
+#   - keep logging when SYMBIONT_MANAGED is set
 #   - skip silently when .symbiont/disabled exists
 
 set -u
@@ -43,13 +43,14 @@ fi
 rm -rf "$WORKDIR/.symbiont"
 env SYMBIONT_MANAGED=true CLAUDE_PROJECT_DIR="$WORKDIR" bash "$SCRIPT" \
     <<<'{"tool_name":"Bash","tool_input":{"command":"ls"}}' 2>/dev/null
-if [ ! -d "$WORKDIR/.symbiont/audit" ]; then
-    printf 'PASS  Mode B skips local logging\n'; pass=$((pass+1))
+if [ -d "$WORKDIR/.symbiont/audit" ]; then
+    printf 'PASS  managed environment retains local logging\n'; pass=$((pass+1))
 else
-    printf 'FAIL  Mode B wrote local audit log\n'; fail=$((fail+1))
+    printf 'FAIL  managed environment suppressed logging\n'; fail=$((fail+1))
 fi
 
 # 4. .symbiont/disabled marker silences logging.
+rm -rf "$WORKDIR/.symbiont"
 mkdir -p "$WORKDIR/.symbiont"
 touch "$WORKDIR/.symbiont/disabled"
 run '{"tool_name":"Bash","tool_input":{"command":"ls"}}'

@@ -19,7 +19,7 @@ echo "--- sensitive-file nudge ---"
 STDOUT=$(env CLAUDE_PROJECT_DIR="$WORKDIR" SYMBIONT_MANAGED= bash "$CHECK" 2>/dev/null); rc=$?
 if [ "$rc" = "0" ] \
    && printf '%s' "$STDOUT" | grep -q '"systemMessage"' \
-   && printf '%s' "$STDOUT" | grep -q '/symbi-protect'; then
+   && printf '%s' "$STDOUT" | grep -q '/symbi:symbi-protect'; then
     printf 'PASS  nudge on stdout systemMessage\n'; pass=$((pass+1))
 else
     printf 'FAIL  nudge channel (rc=%s stdout=[%s])\n' "$rc" "$STDOUT"; fail=$((fail+1))
@@ -36,7 +36,7 @@ echo "--- nudge suppressed once customized ---"
 mkdir -p "$WORKDIR/.symbiont"
 : > "$WORKDIR/.symbiont/local-policy.toml"
 STDOUT=$(env CLAUDE_PROJECT_DIR="$WORKDIR" SYMBIONT_MANAGED= bash "$CHECK" 2>/dev/null); rc=$?
-if [ "$rc" = "0" ] && ! printf '%s' "$STDOUT" | grep -q '/symbi-protect'; then
+if [ "$rc" = "0" ] && ! printf '%s' "$STDOUT" | grep -q '/symbi:symbi-protect'; then
     printf 'PASS  no nudge when local-policy.toml exists\n'; pass=$((pass+1))
 else
     printf 'FAIL  nudge should be suppressed (rc=%s stdout=[%s])\n' "$rc" "$STDOUT"; fail=$((fail+1))
@@ -47,7 +47,7 @@ echo "--- disabled marker ---"
 rm -f "$WORKDIR/.symbiont/local-policy.toml"
 : > "$WORKDIR/.symbiont/disabled"
 STDOUT=$(env CLAUDE_PROJECT_DIR="$WORKDIR" SYMBIONT_MANAGED= bash "$CHECK" 2>/dev/null); rc=$?
-if [ "$rc" = "0" ] && printf '%s' "$STDOUT" | grep -q '/symbi-enable'; then
+if [ "$rc" = "0" ] && printf '%s' "$STDOUT" | grep -q '/symbi:symbi-enable'; then
     printf 'PASS  disabled marker notice on stdout\n'; pass=$((pass+1))
 else
     printf 'FAIL  disabled notice (rc=%s stdout=[%s])\n' "$rc" "$STDOUT"; fail=$((fail+1))

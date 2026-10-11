@@ -1,37 +1,26 @@
 ---
 name: symbi-pin
-description: Pin an MCP server's schema using SchemaPin so future sessions detect tampering. Use when adding a new MCP server to .mcp.json, after a trusted server update, or when the SessionStart hook warns about unsigned servers.
+description: Pin a local MCP server configuration for later change detection.
 ---
 
-# SchemaPin Pinning
+# MCP configuration pinning
 
-Establish trust-on-first-use (TOFU) for an MCP server by fetching its schema, recording the publisher's public key, and storing a signature the SessionStart hook can verify on every future launch.
+This CLI workflow hashes an entry in `.mcp.json` and stores a local pin. It does
+not contact the server, fetch schemas, record a publisher key, or establish
+cryptographic provenance.
 
-## When to Pin
+1. Identify the server name and configuration path. Review the command, arguments,
+   URL and environment references without printing credential values.
+2. Confirm that the operator trusts the configuration now. Pinning records a
+   baseline, not a safety assessment.
+3. Run `symbi schemapin pin --mcp-server NAME --config /absolute/path/.mcp.json`.
+   There is no `pin_schema` MCP tool.
+4. Verify with `symbi schemapin verify --mcp-server NAME --config /absolute/path/.mcp.json`.
+5. Report the returned configuration fingerprint, not an invented publisher key.
 
-- A new MCP server was added to `.mcp.json`
-- SessionStart reports "Unsigned MCP servers: ..."
-- A trusted server update changed the schema (re-pin intentionally)
-- Before relying on a server in production workflows
+An existing conflicting pin requires an intentional review before `--force`.
+Do not auto-repin a failed check. Pin storage is local to the operator account;
+use `symbi schemapin list` to inspect records. If the CLI is missing, provide these
+instructions and report pinning as unavailable.
 
-Do NOT pin a server you do not trust right now -- pinning only freezes the current schema, it does not judge provenance.
-
-## Pinning Process
-
-1. Identify the MCP server name from `.mcp.json` (or ask the user).
-2. Confirm the user actually trusts this server in its current state -- pinning is a commitment.
-3. Use the `pin_schema` tool from the symbi MCP server (or invoke `symbi schemapin pin --mcp-server <name>`).
-4. Report the pinned fingerprint and key ID so the user can record it out-of-band.
-5. Suggest re-running `/symbi-verify` to confirm the pin round-trips.
-
-## After Pinning
-
-- Future SessionStart runs will detect any schema mutation and surface a FAILED warning.
-- To intentionally accept an upstream schema change, the user must re-run this skill -- tell them so.
-- If `symbi` is not on PATH, fall back to explaining the pin workflow and point at `/symbi-status`.
-
-## Failure Modes
-
-- **Server unreachable**: cannot fetch schema -- ask the user to verify the server starts.
-- **Conflicting pin exists**: a prior pin is present; do not silently overwrite. Show both fingerprints and ask the user to choose.
-- **No publisher key**: server does not publish a SchemaPin key -- warn the user that only TOFU pinning is possible.
+Schema-signature verification is separate; see `/symbi:symbi-verify`.

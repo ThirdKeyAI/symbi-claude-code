@@ -1,86 +1,28 @@
 ---
 name: symbi-init
-description: Initialize a Symbiont-governed project. Creates agent definitions, Cedar policies, and configuration files. Use when setting up a new project with AI agent governance or adding Symbiont to an existing project.
+description: Guide optional project scaffolding through the installed Symbiont CLI.
 ---
 
-# Initialize Symbiont Project
+# Initialize a governed project
 
-Set up a governed agent project in the current directory.
+Distinguish local plugin configuration from a runtime control project. Neither is
+required merely to install the plugin.
 
-## Steps
+For Linux native read-only development, use the complete command and prerequisites
+in `examples/cli-executor/README.md`. The runtime's `dev-agent` profile generates
+its supported configuration, agent, registered tools and Cedar policies.
+Keep the control directory empty and separate from the source repository.
 
-1. Check if `symbiont.toml` already exists. If so, ask before overwriting.
+For other runtime profiles, check the installed `symbi init --help` and use the
+appropriate shipping profile. Do not invent configuration sections, executor
+blocks, entity schemas or security-tier guarantees.
 
-2. Create the directory structure:
-   ```
-   agents/          # Agent DSL definitions
-   policies/        # Cedar policy files
-   .symbiont/       # Local governance config and audit logs
-   ```
+Show the intended target, source scope, tool permissions and inference endpoint
+before making a new project. Existing plugin policy controls are operator-managed:
+provide commands for the operator rather than routing blocked writes through
+another tool. Never overwrite an existing control project to resolve a validation
+error.
 
-3. Create `symbiont.toml` with sensible defaults:
-   ```toml
-   [runtime]
-   security_tier = "tier1"   # Docker isolation
-   log_level = "info"
-
-   [policy]
-   engine = "cedar"
-   enforcement = "strict"
-
-   [schemapin]
-   mode = "tofu"  # Trust-On-First-Use
-   ```
-
-4. Create a starter agent at `agents/assistant.dsl`:
-   ```symbiont
-   metadata {
-       version = "1.0.0"
-       description = "Default governed assistant"
-   }
-
-   agent assistant(input: Query) -> Response {
-       capabilities = ["read", "analyze"]
-
-       policy default_access {
-           allow: read(input) if true
-           deny: write(any) if not approved
-           audit: all_operations
-       }
-
-       with memory = "session" {
-           result = process(input)
-           return result
-       }
-   }
-   ```
-
-5. Create a starter Cedar policy at `policies/default.cedar`:
-   ```cedar
-   // Default: allow read operations, require approval for writes
-   permit(
-       principal,
-       action == Action::"read",
-       resource
-   );
-
-   forbid(
-       principal,
-       action == Action::"write",
-       resource
-   ) unless {
-       principal.approved == true
-   };
-   ```
-
-6. Create `.symbiont/local-policy.toml` with default deny rules:
-   ```toml
-   [deny]
-   paths = [".env", ".ssh/", ".aws/", ".gnupg/", "credentials"]
-   commands = ["rm -rf", "git push --force", "mkfs", "dd if="]
-   branches = ["main", "master", "production"]
-   ```
-
-7. Create `AGENTS.md` manifest for the project.
-
-8. Report what was created and suggest next steps.
+After initialization, run `symbi doctor` where available and report which checks
+were actually performed. A valid configuration is not evidence of a successful
+contained model run. Use `/symbi:symbi-audit` to inspect that run's actual journal.

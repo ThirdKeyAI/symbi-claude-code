@@ -142,14 +142,14 @@ assert_pass  "disabled: rm -rf /"   '{"tool_name":"Bash","tool_input":{"command"
 assert_pass  "disabled: read .env"  '{"tool_name":"Read","tool_input":{"file_path":"/foo/.env"}}'
 
 echo ""
-echo "--- Mode B (SYMBIONT_MANAGED) defers ---"
+echo "--- managed environment cannot bypass policy ---"
 rm -rf "$WORKDIR/.symbiont"
 rc=$(env SYMBIONT_MANAGED=true CLAUDE_PROJECT_DIR="$WORKDIR" bash "$GUARD" \
     <<<'{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}' >/dev/null 2>&1; echo $?)
-if [ "$rc" = "0" ]; then
-    printf 'PASS  Mode B defers\n'; pass=$((pass+1))
+if [ "$rc" = "2" ]; then
+    printf 'PASS  managed environment is untrusted\n'; pass=$((pass+1))
 else
-    printf 'FAIL  Mode B defers (got %s)\n' "$rc"; fail=$((fail+1))
+    printf 'FAIL  managed environment is untrusted (got %s)\n' "$rc"; fail=$((fail+1))
 fi
 
 echo ""

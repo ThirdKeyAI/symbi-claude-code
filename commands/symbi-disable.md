@@ -1,25 +1,22 @@
 ---
 name: symbi-disable
-description: Drop a marker file that no-ops every Symbiont hook. Graceful opt-out without uninstalling.
-allowed-tools: ["Bash"]
+description: Show operator instructions for opting out of local hooks.
 ---
 
-# Symbi Disable
+# Disable local hooks
 
-Create `.symbiont/disabled` so all hooks (policy-guard, audit-log,
-policy-log, install-check) early-return without blocking or logging.
-The plugin stays installed; nothing is removed.
+Explain that the plugin is optional. The operator can disable/uninstall it through
+the harness plugin controls, or run these commands in a separate terminal at the
+project root:
 
-## Steps
-
-1. Create `.symbiont/` if it doesn't exist.
-2. Write a marker to `.symbiont/disabled` with a timestamp and a comment.
-3. Tell the user: "Symbiont hooks disabled. Run /symbi-enable to restore."
-
-```bash
+```sh
 mkdir -p .symbiont
-date -u +"# disabled at %Y-%m-%dT%H:%M:%SZ" > .symbiont/disabled
-echo "# delete this file or run /symbi-enable to re-activate" >> .symbiont/disabled
+touch .symbiont/disabled
 ```
 
-If the file already exists, just print: "Symbiont already disabled at <timestamp>."
+Do not execute these commands or create the marker through agent tools. It is a
+policy control. Do not claim hooks are disabled until the operator reports or a
+read-only check confirms the change. The marker suppresses decisions and logging
+for valid calls; malformed hook payloads still fail.
+
+Use `/symbi:symbi-enable` for restoration instructions.

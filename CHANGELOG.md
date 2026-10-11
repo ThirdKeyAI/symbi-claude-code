@@ -1,6 +1,37 @@
 # Changelog
 
-## [Unreleased]
+## [0.6.0]
+
+### Security and compatibility
+
+- Require Claude Code 2.1.295+ with hook failures/timeouts blocked.
+- Require Python 3.11+ and use one strict JSON/TOML engine for both adapters.
+  Invalid or ambiguous input and unavailable enforcement now block calls.
+- Preserve native tool names and complete arguments through the runtime Cedar
+  contract; cover all tool events and reject implicit default allows, evaluator
+  failures and timeouts. This integration uses the current structured CLI result.
+- Remove environment-based policy bypasses. Protect direct file writes to local
+  controls and the installed plugin, including normalized and symlink aliases.
+- Local deny rules now override exceptions. Command exceptions match the entire
+  command. Unsupported policy sections fail rather than being silently ignored.
+- Cursor preToolUse sudo warnings block because its ask result is not enforced;
+  the dedicated shell event retains ask. Safely merge project hook installations.
+
+### Behavior and guidance
+
+- Make the runtime MCP server opt-in; add an explicit sample configuration.
+- Record local decisions and input digests, while preserving completion records.
+  These remain mutable diagnostics, not signed compliance journals.
+- Keep user opt-out available through operator-controlled settings or a marker;
+  commands provide instructions rather than editing their own controls.
+- Correct marketplace installation, managed CLI/Landlock examples, configuration
+  pinning, schema verification and signed-journal inspection guidance.
+- Replace obsolete development plans with current product guidance.
+- Add strict-parser, failure-path, adapter and installer regression tests plus a
+  real-runtime policy workflow test without model calls, plus an installed-client
+  smoke test for policy decisions and hook failure/timeout blocking.
+
+## Previous unreleased work
 
 ### Fixed
 - **Hook output now follows the documented Claude Code contract.** Blocks emit
@@ -28,8 +59,7 @@
   UI spam; recording is handled by the PostToolUse audit log.
 
 ### Added
-- Repo `.gitignore` (`.claude/settings.local.json`, `.symbiont/audit/`,
-  `.symbiont/disabled`).
+- Ignore generated local runtime state.
 - Output-channel regression tests for `policy-guard.sh` and a new
   `tests/test_install_check.sh` (suite now 84 tests).
 
@@ -86,7 +116,6 @@
 - README rewrites the lead with the plugin-only value proposition. Runtime
   sections (Cedar, ORGA, Mode B, dual-mode architecture) move below a
   "Going further" heading.
-- CLAUDE.md updated to reflect Tier 2 as the default behavior.
 
 ### Removed
 - `jq` from the prerequisites section of the README. The hooks now prefer
@@ -121,7 +150,6 @@
 
 ### Changed
 - Hooks now run `policy-guard.sh` (blocking) before `policy-log.sh` (advisory)
-- Updated CLAUDE.md and README.md to document governance tiers
 
 ## [0.2.0] - 2026-03-07
 
@@ -136,7 +164,6 @@
   - `examples/cli-executor/` -- CliExecutor-wrapped Claude Code with DSL + Cedar
   - `examples/agent-sdk/` -- headless Agent SDK wrapper pattern
 - `claude_code` executor type documentation for DSL agent definitions
-- Dual-mode documentation in README and CLAUDE.md
 
 ## [0.1.0] - 2026-03-07
 

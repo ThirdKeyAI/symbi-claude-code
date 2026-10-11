@@ -1,0 +1,26 @@
+name: Plugin checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  hooks:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.11', '3.14']
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Syntax and hook contract checks
+        run: |
+          python3 -I -m py_compile scripts/core/policy.py scripts/install-cursor.py tests/test_contract.py tests/runtime_e2e.py tests/harness_e2e.py
+          for script in install.sh scripts/*.sh scripts/core/*.sh adapters/cursor/*.sh tests/*.sh; do bash -n "$script"; done
+          shellcheck install.sh scripts/*.sh scripts/core/*.sh adapters/cursor/*.sh tests/*.sh
+          bash tests/run-tests.sh

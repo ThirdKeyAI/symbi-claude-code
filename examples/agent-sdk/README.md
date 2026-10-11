@@ -1,71 +1,21 @@
-# Agent SDK Wrapper Example
+# Headless callers and the governed runtime
 
-Use the Claude Agent SDK programmatically from within Symbiont's runtime.
-This pattern is for building headless agents that run without interactive
-Claude Code sessions.
+A direct Agent SDK call does not inherit Symbiont's isolation, policies or signed
+journals. Loading this plugin or setting an environment variable does not create
+that boundary.
 
-## Pattern
+For a supported headless workflow, scaffold the separate control project in the
+[managed CLI example](../cli-executor/README.md), run `symbi doctor`, then invoke
+`symbi run dev --target /absolute/source --input 'Review this repository'` from
+that control directory. An application can launch this CLI with an argument
+array, check its exit status, and inspect the resulting signed journal.
 
-```rust
-use symbi_runtime::orchestrator::Orchestrator;
-use symbi_runtime::security::SecurityTier;
+The runtime owns admission, sandboxing, brokered tools and inference, approvals
+and cleanup. The contained CLI receives no unrestricted built-in tools or loaded
+plugins. Use only exact registered ToolClad names in metadata.
 
-async fn run_governed_agent(task: &str) -> Result<String> {
-    let orchestrator = Orchestrator::new().await?;
-
-    // Symbiont wraps the Claude Code invocation in ORGA governance
-    let result = orchestrator.execute_code(
-        SecurityTier::Tier1,  // Docker isolation
-        &format!(
-            "claude -p '{}' --allowedTools 'Bash,Read,Write,Edit,mcp__symbi__*' --plugin-dir /path/to/symbi-claude-code",
-            task
-        ),
-        vec![
-            ("SYMBIONT_MANAGED", "true"),
-            ("SYMBIONT_MCP_URL", &orchestrator.mcp_url()),
-            ("SYMBIONT_SESSION_ID", &uuid::Uuid::new_v4().to_string()),
-        ],
-    ).await?;
-
-    Ok(result.stdout)
-}
-```
-
-## DSL Definition
-
-```symbiont
-metadata {
-    version = "1.0.0"
-    description = "Headless agent using Agent SDK via CliExecutor"
-}
-
-agent feature_builder(input: FeatureSpec) -> Implementation {
-    capabilities = ["read", "write", "analyze", "test"]
-
-    executor {
-        type = "claude_code"
-        allowed_tools = ["Bash", "Read", "Write", "Edit", "Grep", "Glob", "mcp__symbi__*"]
-        plugin = "symbi"
-        model = "claude-sonnet-4-20250514"
-    }
-
-    policy build_policy {
-        allow: read(any) if true
-        allow: write(source_code) if input.approved
-        deny: write(config) if not input.is_admin
-        audit: all_operations
-    }
-
-    with sandbox = "tier1", timeout = "60m", budget_tokens = 100000 {
-        implementation = build(input)
-        return implementation
-    }
-}
-```
-
-## When to Use This Pattern
-
-- Automated CI/CD pipelines that need governed code generation
-- Batch processing of development tasks
-- Dark factory deployments where agents run without human interaction
-- Any scenario requiring programmatic ORGA governance over Claude Code
+There is no supported example here that wraps arbitrary SDK shell execution with
+an invented orchestrator API. Additional SDK transports require their own
+reviewed trust boundary and end-to-end qualification. Code generation or mutation
+also needs explicit output grants and approval contracts; the provided native
+scaffold is deliberately read-only.

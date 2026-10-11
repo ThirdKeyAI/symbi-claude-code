@@ -5,37 +5,40 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/install-check.sh",
-            "timeout": 10
+            "command": "bash",
+            "timeout": 10,
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/scripts/install-check.sh"
+            ]
           }
         ]
       }
     ],
     "PreToolUse": [
       {
-        "matcher": "Read|Write|Edit|MultiEdit|Bash|mcp__*",
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/policy-guard.sh",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/policy-log.sh",
-            "timeout": 5
+            "command": "bash",
+            "timeout": 5,
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/scripts/policy-guard.sh"
+            ],
+            "onFailure": "block"
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "Read|Write|Edit|MultiEdit|Bash|mcp__*",
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/audit-log.sh",
-            "timeout": 5
+            "command": "bash",
+            "timeout": 5,
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/scripts/audit-log.sh"
+            ]
           }
         ]
       }

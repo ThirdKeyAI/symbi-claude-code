@@ -1,16 +1,6 @@
-// Policy for code_reviewer agent
-// Allow read access to all resources
-permit(
-    principal == Agent::"code_reviewer",
-    action == Action::"read",
-    resource
-);
-
-// Forbid write access unless the PR is in draft mode
-forbid(
-    principal == Agent::"code_reviewer",
-    action == Action::"write",
-    resource
-) unless {
-    resource.pr_status == "draft"
-};
+// Managed runtime schema; source roots separately bound all reads.
+// No write, shell or arbitrary network tool is permitted here.
+permit(principal, action == Action::"tool_call::claude_code", resource);
+permit(principal, action == Action::"tool_call::read_file", resource);
+permit(principal, action == Action::"tool_call::list_files", resource);
+permit(principal, action == Action::"tool_call::grep_files", resource);
