@@ -189,18 +189,41 @@ The runtime's signed journal is a separate artifact from an actual governed run.
 
 ## Validation
 
+[Plugin checks](https://github.com/ThirdKeyAI/symbi-claude-code/actions/workflows/plugin-checks.yml)
+run on pushes and pull requests using Python **3.11 and 3.14** on Ubuntu. CI checks
+shell syntax, ShellCheck, Python compilation and the focused regression suite.
+Run the suite locally with Bash and Python 3.11+:
+
 ```sh
 bash tests/run-tests.sh
+```
+
+It covers existing rules, parser attacks, failures, both adapters, control paths,
+runtime payload preservation and installer merging. No runtime installation or
+third-party Python packages are needed for this suite.
+
+The separate E2E checks require a current `symbi` binary; the installed-client
+check also requires Claude Code 2.1.295+:
+
+```sh
 python3 -I tests/runtime_e2e.py /absolute/path/to/symbi
 python3 -I tests/harness_e2e.py /absolute/path/to/claude /absolute/path/to/symbi
 ```
 
-The focused suite covers existing rules, parser attacks, failures, both adapters,
-control paths, runtime payload preservation and installer merging. The E2E test
-uses the actual policy CLI with allow, deny, nested arguments and invalid policy
-cases; it needs no model service. The installed-client test uses a local synthetic provider and temporary configuration
-to verify an allowed read, a Cedar denial, and blocking on missing/timed-out hooks.
-It passed on Claude Code 2.1.296. Cursor adapter contracts are tested directly; an
-installed Cursor UI smoke test remains outstanding.
+The runtime check exercises actual policy allow/deny decisions, nested arguments
+and invalid policies. The installed-client check uses a local synthetic provider
+and temporary configuration to verify an allowed read, a Cedar denial, and
+blocking on missing or timed-out hooks. Neither uses account credentials or an
+external model service. The installed-client check passed on Claude Code 2.1.296.
+Cursor adapter contracts are tested directly; installed Cursor UI qualification
+remains outstanding. These E2E checks run separately from the CI matrix.
+
+## Dependency maintenance
+
+The policy engine uses the Python standard library. CI actions are pinned to
+exact commit SHAs, and [Dependabot](.github/dependabot.yml) checks them weekly.
+Dependency PRs run the same Python test matrix. Major action updates also need a
+compatibility review of the workflow's inputs, runner requirements and triggers
+before merging.
 
 Licensed under [Apache-2.0](LICENSE).
