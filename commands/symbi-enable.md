@@ -1,18 +1,18 @@
 ---
 name: symbi-enable
-description: Re-enable Symbiont hooks after /symbi-disable.
-allowed-tools: ["Bash"]
+description: Show operator instructions for restoring local hooks.
 ---
 
-# Symbi Enable
+# Enable local hooks
 
-Remove the `.symbiont/disabled` marker so hooks fire again.
+If `.symbiont/disabled` exists, ask the operator to remove it in a separate terminal
+at the project root:
 
-## Steps
+```sh
+rm .symbiont/disabled
+```
 
-1. If `.symbiont/disabled` does not exist, print: "Symbiont is already active."
-2. Otherwise, remove it:
-   ```bash
-   rm -f .symbiont/disabled
-   ```
-3. Print: "Symbiont hooks re-enabled."
+Do not change policy controls through agent tools. If the plugin was disabled or
+uninstalled in the harness, re-enable/install it there as well. Check readiness
+with `/symbi:symbi-status`; do not claim protection was restored merely because
+instructions were shown.

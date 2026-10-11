@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "__SYMBI_COMMAND__",
+        "timeout": 5,
+        "failClosed": true
+      }
+    ]
+  }
+}

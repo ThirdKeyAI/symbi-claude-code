@@ -1,9 +1,8 @@
-# Personal / machine-local Claude Code settings (never commit)
-.claude/settings.local.json
-
-# Symbiont runtime artifacts — generated locally, not part of the plugin
+# Generated runtime state
 .symbiont/audit/
 .symbiont/disabled
-
+# Python caches
+__pycache__/
+*.pyc
 # OS noise
 .DS_Store

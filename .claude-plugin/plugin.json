@@ -1,7 +1,7 @@
 {
   "name": "symbi",
-  "description": "Default-on protection that blocks Claude Code from reading secrets, writing to sensitive paths, and running destructive shell commands. No runtime required. Opt-in upgrade path to Cedar policy evaluation, SchemaPin tool verification, and ORGA-governed agents when the symbi binary is installed.",
-  "version": "0.5.0",
+  "description": "Optional local policy hooks with strict parsing, blocking Cedar integration and operator-managed controls. Python 3.11+ required; governed containment runs separately in Symbiont.",
+  "version": "0.6.0",
   "author": {
     "name": "ThirdKey AI",
     "email": "hello@thirdkey.ai",

@@ -1,22 +1,20 @@
-# Symbiont Local Policy — Developer-defined deny rules
-# Copy to .symbiont/local-policy.toml to activate blocking protection.
-# Works with both symbi-claude-code and symbi-gemini-cli plugins.
-#
-# Three tiers:
-#   1. Awareness (default) — advisory logging only
-#   2. Protection (this file) — blocks matching patterns
-#   3. Governance (Cedar) — full policy evaluation via symbi binary
+# Optional project rules. Apply outside the agent session at
+# .symbiont/local-policy.toml. Python 3.11+ parses standard TOML.
+[mode]
+mode = "balanced"
 
 [deny]
-# File paths to block writes to (substring match)
-paths = [".env", ".ssh/", ".aws/", ".gnupg/", "credentials"]
+# Paths use glob and substring matching; both reads and writes are checked.
+paths = [
+    "private/",
+    "*.backup",
+]
+# Command patterns are substrings. These do not interpret shell effects.
+commands = ["forbidden-command"]
+branches = ["main", "production"]
 
-# Shell commands to block (substring match)
-commands = ["rm -rf", "git push --force", "mkfs", "dd if="]
-
-# Git branches to block pushes to
-branches = ["main", "master", "production"]
-
-[require_approval]
-# Files that should trigger extra caution (logged, not blocked)
-paths = ["Dockerfile", "docker-compose.yml", "*.tf", "*.cedar"]
+[allow]
+# Exceptions relax built-ins only; local denies and control paths still win.
+paths = [".env.template"]
+# Whole-command exceptions, never substring exemptions.
+commands = ["sudo systemctl status myapp"]
